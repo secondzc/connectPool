@@ -21,7 +21,7 @@ public class Configuration {
     }
 
     public static Integer getWaitTimeoutSecond() {
-        return PropsUtil.getInt(props, ConfigConst.waitTimeoutSecond, 10);
+        return PropsUtil.getInt(props, ConfigConst.waitTimeoutMs, 10);
     }
 
     public static String getUserName() {
@@ -30,5 +30,9 @@ public class Configuration {
 
     public static String getPassword() {
         return PropsUtil.getString(props, ConfigConst.password, "");
+    }
+
+    public static String getUrl() {
+        return PropsUtil.getString(props, Configuration.getUrl(), "");
     }
 }
