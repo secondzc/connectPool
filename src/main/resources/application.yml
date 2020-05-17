@@ -1,6 +1,7 @@
 userName: root
 password: 12345678
+url: jdbc:mysql://localhost:3306/test
 coreConnectNum: 2
 maxConnectNum: 5
 ideTimeoutMinute: 10
-waitTimeoutSecond: 10
+waitTimeoutMs: 10
