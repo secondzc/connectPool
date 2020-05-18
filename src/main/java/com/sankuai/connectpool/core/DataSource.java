@@ -1,5 +1,8 @@
 package com.sankuai.connectpool.core;
 
+import com.sankuai.connectpool.core.result.ConnectionResult;
+import com.sankuai.connectpool.core.result.ImmediateConnectionResult;
+import com.sankuai.connectpool.core.result.TimeoutConnectionHolder;
 import com.sankuai.connectpool.exception.ArgumentException;
 import com.sankuai.connectpool.property.Configuration;
 import com.sankuai.connectpool.util.DateUtil;
@@ -19,8 +22,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 // TODO: 2020-05-18 如果连接长时间没有数据库操作，应该监控并回收
-// TODO: 2020-05-18 因为并发条件下activeConnectionList的size大小问题，暂时将acquire和release两个都加锁了，粒度较大，
-//  且这样一来都不需要使用并发容器了。看是否有啥其他解决方案。
 public class DataSource {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSource.class);
 
@@ -70,39 +71,53 @@ public class DataSource {
     }
 
     /**
+     * 这个方法的目的是将阻塞等待connection的逻辑从同步代码块中抽出来，否则可以因为等待导致synchronized修饰的方法执行时间非常长
+     */
+    public Connection acquire() {
+        ConnectionResult connectionResult = doAcquire();
+        if (connectionResult instanceof TimeoutConnectionHolder) {
+            Connection connection = connectionResult.get(waitTimeoutSecond);
+            if (connection == null) {
+                LOGGER.info("dataSource acquire, [4]wait idle timeout fail");
+                return null;
+            }
+            activeConnectionList.add(connection);
+            LOGGER.info("dataSource acquire, [5]wait idle success");
+            return connection;
+        } else if (connectionResult instanceof ImmediateConnectionResult) {
+            return connectionResult.get(waitTimeoutSecond);
+        } else {
+            throw new RuntimeException("unsupported connectionResult type");
+        }
+    }
+
+    /**
      * 活跃连接数+空闲线连接数：
      * 小于coreConnectNum时，建立新连接
      * 大于等于maxConnectNum时，有空闲连接则使用空闲连接，没有空闲连接也不创建，超时等待活跃连接释放
-     * 大于coreConnectNum且小于maxConnectNum时，有空闲连接则使用空闲连接，如果没有空闲连接，则创建新连接
+     * 大于coreConnectNum且小于maxConnectNum时，如果没有空闲连接，则创建新连接，有空闲连接则使用空闲连接
      */
-    public synchronized Connection acquire() {
+    public synchronized ConnectionResult doAcquire() {
         int activeConnectNum = activeConnectionList.size();
         int idleConnectNum = idleConnectionQueue.size();
         if (activeConnectNum + idleConnectNum < coreConnectNum) {
             Connection connection = doConnect();
             activeConnectionList.add(connection);
             LOGGER.info("dataSource acquire, [1]build new connect success, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
-            return connection;
+            return new ImmediateConnectionResult(connection);
         }
 
         if (activeConnectNum + idleConnectNum >= maxConnectNum) {
             IdleConnection idleConnection = idleConnectionQueue.poll();
             if (idleConnection != null) {
                 LOGGER.info("dataSource acquire, [2]use idle connect success, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
-                return idleConnection.getConnection();
+                return new ImmediateConnectionResult(idleConnection.getConnection());
             }
             if (waitTimeoutSecond <= 0) {
                 LOGGER.info("dataSource acquire, [3]no timeout fail, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
                 return null;
             }
-            Connection connection = waitingQueue.inQueueAndGet(waitTimeoutSecond);
-            if (connection == null) {
-                LOGGER.info("dataSource acquire, [4]wait idle timeout fail, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
-                return null;
-            }
-            activeConnectionList.add(connection);
-            LOGGER.info("dataSource acquire, [5]wait idle success, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
-            return connection;
+            return waitingQueue.inQueueAndGet(waitTimeoutSecond);
         }
 
         IdleConnection idleConnection = idleConnectionQueue.poll();
@@ -110,10 +125,10 @@ public class DataSource {
             Connection connection = doConnect();
             activeConnectionList.add(connection);
             LOGGER.info("dataSource acquire, [6]build new connect success, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
-            return connection;
+            return new ImmediateConnectionResult(connection);
         }
         LOGGER.info("dataSource acquire, [7]use idle connect, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
-        return idleConnection.getConnection();
+        return new ImmediateConnectionResult(idleConnection.getConnection());
     }
 
     /**
