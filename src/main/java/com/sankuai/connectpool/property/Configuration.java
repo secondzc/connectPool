@@ -33,6 +33,6 @@ public class Configuration {
     }
 
     public static String getUrl() {
-        return PropsUtil.getString(props, Configuration.getUrl(), "");
+        return PropsUtil.getString(props, ConfigConst.url, "");
     }
 }

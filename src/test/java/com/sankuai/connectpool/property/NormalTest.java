@@ -3,6 +3,7 @@ package com.sankuai.connectpool.property;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -11,7 +12,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-public class Test {
+public class NormalTest {
 
     Connection con = null;// 创建一个数据库连接
     PreparedStatement pre = null;// 创建预编译语句对象，一般都是用这个而不用Statement
@@ -48,7 +49,7 @@ public class Test {
 
     }
 
-    @org.junit.Test
+    @Test
     public void testPool() throws Exception{
         String sql = "select * from teacher where t_id=?";//预编译语句，?代表参数
         pre = con.prepareStatement(sql);// 实例化预编译语句
