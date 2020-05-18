@@ -26,7 +26,7 @@ public class DataSource {
 
     private int coreConnectNum = 0;
     private int maxConnectNum = 0;
-    private int ideTimeoutMinute = 0;
+    private int idleTimeoutMinute = 0;
     private int waitTimeoutSecond = 0;
 
     private List<Connection> activeConnectionList = Collections.synchronizedList(new ArrayList<Connection>());
@@ -46,7 +46,7 @@ public class DataSource {
                     while (iterator.hasNext()) {
                         IdleConnection idleConnection = iterator.next();
                         long curTimeSecond = DateUtil.getCurrentTimeSecond();
-                        if (curTimeSecond < ideTimeoutMinute * 60 + idleConnection.getAddTimeSecond()) {
+                        if (curTimeSecond < idleTimeoutMinute * 60 + idleConnection.getAddTimeSecond()) {
                             continue;
                         }
                         Connection connection = idleConnection.getConnection();
@@ -61,11 +61,11 @@ public class DataSource {
         }, 0, 1, TimeUnit.SECONDS);
     }
 
-    public DataSource(int coreConnectNum, int maxConnectNum, int ideTimeoutMinute, int waitTimeoutSecond) {
-        checkParams(coreConnectNum, maxConnectNum, ideTimeoutMinute, waitTimeoutSecond);
+    public DataSource(int coreConnectNum, int maxConnectNum, int idleTimeoutMinute, int waitTimeoutSecond) {
+        checkParams(coreConnectNum, maxConnectNum, idleTimeoutMinute, waitTimeoutSecond);
         this.coreConnectNum = coreConnectNum;
         this.maxConnectNum = maxConnectNum;
-        this.ideTimeoutMinute = ideTimeoutMinute;
+        this.idleTimeoutMinute = idleTimeoutMinute;
         this.waitTimeoutSecond = waitTimeoutSecond;
     }
 
@@ -129,10 +129,10 @@ public class DataSource {
         idleConnectionQueue.add(new IdleConnection(connection, DateUtil.getCurrentTimeSecond()));
     }
 
-    private void checkParams(int coreConnectNum, int maxConnectNum, int ideTimeoutMinute, int waitTimeoutSecond) {
+    private void checkParams(int coreConnectNum, int maxConnectNum, int idleTimeoutMinute, int waitTimeoutSecond) {
         if (coreConnectNum <= 0
                 || maxConnectNum <= 0
-                || ideTimeoutMinute <= 0
+                || idleTimeoutMinute <= 0
                 || waitTimeoutSecond <= 0) {
             throw new ArgumentException("params less than zero");
         }

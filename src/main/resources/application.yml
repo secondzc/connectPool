@@ -3,5 +3,5 @@ password: 12345678
 url: jdbc:mysql://localhost:3306/test
 coreConnectNum: 2
 maxConnectNum: 5
-ideTimeoutMinute: 10
+idleTimeoutMinute: 10
 waitTimeoutMs: 10
