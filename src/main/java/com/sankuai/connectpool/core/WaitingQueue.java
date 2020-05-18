@@ -14,7 +14,7 @@ public class WaitingQueue {
     /**
      * 入队中并超时等待
      */
-    public ConnectionResult inQueueAndGet(int timeout) {
+    public ConnectionResult inQueueAndGet() {
         TimeoutConnectionHolder timeoutConnectionHolder = new TimeoutConnectionHolder();
         queue.add(timeoutConnectionHolder);
         return timeoutConnectionHolder;

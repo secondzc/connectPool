@@ -38,7 +38,7 @@ public class IntegrationTest {
                         System.out.println("acquire connection success");
                     }
                     try {
-                        // 将sleep时间跳短同时将waitTimeoutMs调长可验证连接池回收连接再利用情况
+                        // 将sleep时间调短同时将waitTimeoutMs调长可验证连接池回收连接再利用情况
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();

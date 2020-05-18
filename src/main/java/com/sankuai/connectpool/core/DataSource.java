@@ -117,7 +117,7 @@ public class DataSource {
                 LOGGER.info("dataSource acquire, [3]no timeout fail, activeConnectNum:{}, idleConnectNum:{}", activeConnectNum, idleConnectNum);
                 return null;
             }
-            return waitingQueue.inQueueAndGet(waitTimeoutSecond);
+            return waitingQueue.inQueueAndGet();
         }
 
         IdleConnection idleConnection = idleConnectionQueue.poll();
